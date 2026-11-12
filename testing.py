@@ -1,3 +1,4 @@
+
 """Nezávislé testování odevzdaného řešení.
 
 Doplňte funkce nacti_model(), predzpracuj() a predikuj(). Zbytek skriptu neměňte.
@@ -6,6 +7,7 @@ Spuštění:
     python testing.py                    # použije cestu z DATA_PATH
     python testing.py cesta/k/test.csv   # nebo cestu z příkazové řádky
 """
+
 import sys
 from pathlib import Path
 
@@ -23,20 +25,24 @@ DATA_PATH = SLOZKA / "data" / "train.csv"
 
 def nacti_model():
     """Načte uložený natrénovaný model (a naučené předzpracování) ze složky models/."""
-    raise NotImplementedError("Doplňte načtení modelu.")
+    import joblib
+
+    cesta = SLOZKA / "models" / "model.joblib"
+    return joblib.load(cesta)
 
 
 def predzpracuj(x: pd.DataFrame):
     """Připraví příznaky pro model.
 
-    Používá jen parametry naučené na trénovacích datech; počet a pořadí řádků se nemění.
+    Používá jen parametry naučené na trénovacích datech;
+    počet a pořadí řádků se nemění.
     """
-    raise NotImplementedError("Doplňte předzpracování.")
+    return x
 
 
 def predikuj(model, x) -> np.ndarray:
     """Vrátí predikce 0/1 pro každý řádek x."""
-    raise NotImplementedError("Doplňte predikci.")
+    return model.predict(x)
 
 
 def main() -> None:
