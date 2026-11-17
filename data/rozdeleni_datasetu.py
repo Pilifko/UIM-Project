@@ -1,13 +1,18 @@
+
 """
-Rozdělení datasetu ocni_nalez.csv na train, test a validation.
+Rozdělení datasetu ocni_nalez.csv na train a validation.
 
 Výsledné soubory:
-    train.csv       561 vzorků (70 %)
-    test.csv        120 vzorků (15 %)
-    validation.csv  121 vzorků (15 %)
+    train.csv       642 vzorků
+    validation.csv  160 vzorků
 
-Rozdělení je stratifikované podle sloupce "target" a reprodukovatelné.
-Původní soubor ocni_nalez.csv se nijak neupravuje.
+Trénovací část bude použita pro 5-fold cross-validaci.
+Validační část zůstane stranou a použije se až
+pro závěrečné ověření vybraného modelu.
+
+Rozdělení je stratifikované podle sloupce target
+a reprodukovatelné.
+Původní ocni_nalez.csv se nijak neupravuje.
 """
 
 from pathlib import Path
@@ -23,17 +28,17 @@ from sklearn.model_selection import train_test_split
 RANDOM_STATE = 42
 TARGET_COLUMN = "target"
 
-# Vstupní soubor musí být ve stejné složce jako tento skript.
 DATA_DIR = Path(__file__).resolve().parent
-INPUT_FILE = DATA_DIR / "ocni_nalez.csv"
 
+INPUT_FILE = DATA_DIR / "ocni_nalez.csv"
 TRAIN_FILE = DATA_DIR / "train.csv"
-TEST_FILE = DATA_DIR / "test.csv"
 VALIDATION_FILE = DATA_DIR / "validation.csv"
 
 
 def main():
+
     # 1. Načtení původního datasetu
+
     if not INPUT_FILE.exists():
         raise FileNotFoundError(
             f"Vstupní soubor nebyl nalezen: {INPUT_FILE}\n"
@@ -57,58 +62,61 @@ def main():
             f"Očekáváno 802 vzorků, ale načteno {len(data)}."
         )
 
+    if set(data[TARGET_COLUMN].unique()) != {0, 1}:
+        raise ValueError("Očekávány binární třídy 0 a 1.")
+
     print(f"Načteno vzorků: {len(data)}")
+
     print("\nRozložení tříd v původním datasetu:")
     print(data[TARGET_COLUMN].value_counts().sort_index())
 
-    # 2. Oddělení trénovací sady (561 vzorků) od zbytku (241 vzorků)
-    train_data, remaining_data = train_test_split(
+    # 2. Rozdělení na trénovací a validační část
+
+    train_data, validation_data = train_test_split(
         data,
-        test_size=241,
+        test_size=160,
         stratify=data[TARGET_COLUMN],
-        random_state=RANDOM_STATE,
+        random_state=RANDOM_STATE
     )
 
-    # 3. Rozdělení zbývajících dat na test (120) a validation (121)
-    test_data, validation_data = train_test_split(
-        remaining_data,
-        test_size=121,
-        stratify=remaining_data[TARGET_COLUMN],
-        random_state=RANDOM_STATE,
-    )
+    # 3. Uložení souborů
 
-    # 4. Uložení do samostatných CSV souborů
     train_data.to_csv(TRAIN_FILE, index=False)
-    test_data.to_csv(TEST_FILE, index=False)
     validation_data.to_csv(VALIDATION_FILE, index=False)
 
-    # 5. Kontrola výsledku
+    # 4. Kontrola výsledku
+
     print("\nRozdělení datasetu:")
     print(f"Train:      {len(train_data)} vzorků")
-    print(f"Test:       {len(test_data)} vzorků")
     print(f"Validation: {len(validation_data)} vzorků")
 
     print("\nRozložení tříd v jednotlivých sadách:")
+
     for name, subset in (
         ("Train", train_data),
-        ("Test", test_data),
         ("Validation", validation_data),
     ):
         print(f"\n{name}:")
         print(subset[TARGET_COLUMN].value_counts().sort_index())
 
-    # Každý původní vzorek musí být právě v jedné sadě.
-    total = len(train_data) + len(test_data) + len(validation_data)
-    assert total == len(data)
-    assert len(train_data) == 561
-    assert len(test_data) == 120
-    assert len(validation_data) == 121
+    # 5. Kontrola počtu vzorků
+
+    assert len(train_data) == 642
+    assert len(validation_data) == 160
+    assert len(train_data) + len(validation_data) == len(data)
+
+    # Kontrola, že se žádný vzorek nedostal do obou sad.
+    train_indices = set(train_data.index)
+    validation_indices = set(validation_data.index)
+
+    assert train_indices.isdisjoint(validation_indices)
 
     print("\nKontrola proběhla úspěšně.")
-    print("Vytvořené soubory:")
+
+    print("\nVytvořené soubory:")
     print(f"  {TRAIN_FILE.name}")
-    print(f"  {TEST_FILE.name}")
     print(f"  {VALIDATION_FILE.name}")
+
     print("\nPůvodní ocni_nalez.csv zůstal beze změny.")
 
 
